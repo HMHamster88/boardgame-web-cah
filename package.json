@@ -1,0 +1,24 @@
+{
+  "name": "cards-against-humanity",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "workspaces": [
+    "back",
+    "front"
+  ],
+  "scripts": {
+    "link-common": "npm run link-common -w back && npm run link-common -w front",
+    "build-back": "npm run build -w back && npm run copy-back",
+    "build-front": "npm run build -w front && npm run copy-front",
+    "build-all": "npm run build-back && npm run build-front",
+    "copy-back": "node copy.js -back",
+    "copy-front": "node copy.js -front"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
