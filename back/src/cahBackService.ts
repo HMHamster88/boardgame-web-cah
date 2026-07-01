@@ -3,6 +3,7 @@ import { CahGamePhase, cahPlayerCardsCount, type CahDrawCardsAction, type CahGam
 import answers from "./texts/answers"
 import questions from "./texts/questions"
 import _ from "lodash"
+import packageInfo from '../../package.json' with { type: 'json' };
 
 export const CahStaticSettings = {
     minPlayers: 2,
@@ -10,6 +11,8 @@ export const CahStaticSettings = {
 }
 
 export class CahGameBackService implements GameBackService {
+    version = packageInfo.version
+    homepage = packageInfo.homepage
 
     startGame(game: Game, gameSettings: GameSettings): GameState {
         game.status = GameStatusEnum.STARTED

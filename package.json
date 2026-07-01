@@ -4,6 +4,11 @@
   "description": "",
   "license": "ISC",
   "author": "",
+  "homepage": "https://github.com/HMHamster88/boardgame-web-cah",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HMHamster88/boardgame-web-cah.git"
+  },
   "type": "module",
   "main": "index.js",
   "workspaces": [
@@ -16,9 +21,11 @@
     "build-front": "npm run build -w front && npm run copy-front",
     "build-all": "npm run build-back && npm run build-front",
     "copy-back": "node copy.js -back",
-    "copy-front": "node copy.js -front"
+    "copy-front": "node copy.js -front",
+    "create-zip": "node create-zip.js"
   },
   "devDependencies": {
+    "adm-zip": "^0.5.18",
     "dotenv": "^17.4.2"
   }
 }
