@@ -1,6 +1,7 @@
 import { configDotenv } from 'dotenv';
 import { cp } from 'node:fs/promises';
 import path from 'node:path';
+import packageInfo from './package.json' with { type: 'json' };
 configDotenv()
 
 const gamesModulesPath = process.env.GAMES_MODULES_PATH
@@ -18,7 +19,7 @@ if (!gamesModulesPath) {
     console.log('\x1b[31m%s\x1b[0m', 'Set GAMES_MODULES_PATH variable')
 } else {
 
-    const cahFolderName = 'cards_against_humanity'
+    const cahFolderName = 'cards_against_humanity-' + packageInfo.version
 
     if (process.argv.includes('-back')) {
         copyFolder('./back/dist', path.join(gamesModulesPath, cahFolderName, 'back'))
