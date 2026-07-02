@@ -13,6 +13,7 @@ export class CatanFrontService implements GameFrontService {
     gameViewComponent: Component = CahGameView
     playerComponent: Component | undefined = PlayerComponent
     statisticsComponent: Component | undefined = undefined
+    canAddBot: boolean = true
     localization: any = {
         en: {
             CARDS_AGAINST_HUMANITY: 'Cards Against Humanity',

@@ -1,4 +1,4 @@
-import { GameStatusEnum, getShuffledArray, handleMessage, type Game, type GameAction, type GameBackService, type GameContext, type GameSettings, type GameState, type MesasgeHandlers } from "boardgame-web-common"
+import { GameStatusEnum, getShuffledArray, handleMessage, randomElement, type BotGameContext, type Game, type GameAction, type GameBackService, type GameContext, type GameSettings, type GameState, type MesasgeHandlers } from "boardgame-web-common"
 import { CahGamePhase, cahPlayerCardsCount, type CahDrawCardsAction, type CahGamePrivateState, type CahGamePublicState, type CahGameSettings, type CahPrivatePlayerState, type CahPublicPlayerState, type CahVoteForAnswerAction, type CahSendAnswersAction } from "./types"
 import answers from "./texts/answers"
 import questions from "./texts/questions"
@@ -231,6 +231,59 @@ export class CahGameBackService implements GameBackService {
         }
 
         await handleMessage(handlers, gameAction)
+    }
+
+    countRequiredAnswers(question: string) {
+        const regex = new RegExp('{(.*?)}', 'ig');
+        question.matchAll(regex)
+        return [...question.matchAll(regex)].length
+    }
+
+    async runBotsActions(botGameContext: BotGameContext): Promise<void> {
+        const game = botGameContext.game
+        const gameState = botGameContext.gameState
+        const publicState = gameState.publicState as CahGamePublicState
+        const privateState = gameState.privateState as CahGamePrivateState
+        const settings = botGameContext.gameSettings as CahGameSettings
+        const activePlayer = game.players[publicState.activePlayerIndex]
+        const activePlayerId = activePlayer?.userId
+
+        const bots = game.players.filter(player => player.isBot)
+        for (let bot of bots) {
+            //const playerPublicState = publicState.playersStates.find(pl => pl.playerId == bot.userId)!
+            const playerPrivateState = privateState.playersStates.find(pl => pl.playerId == bot.userId)!
+            const isActivePlayer = activePlayerId == bot.userId
+            switch (publicState.phase) {
+                case CahGamePhase.PLAYERS_CHOOSE_ANSWERS:
+                    if (publicState.playersSlectedAswers.find(pa => pa.playerId == bot.userId)) {
+                        break
+                    }
+                    if (settings.voteMode || !isActivePlayer) {
+                        const questionText = questions[publicState.questionCardId]
+                        const requiredAnswerCount = this.countRequiredAnswers(questionText)
+                        const answersIds = getShuffledArray(playerPrivateState.onHandAswersIds).slice(0, requiredAnswerCount)
+                        const action: CahSendAnswersAction = {
+                            type: 'CahSendAnswersAction',
+                            answersIds: answersIds
+                        }
+                        botGameContext.performGameAction(action, bot.userId)
+                    }
+                    break
+                case CahGamePhase.VOTING_FOR_ANSWERS:
+                    if (publicState.playersSlectedAswers.find(ans => ans.playerVotes.includes(bot.userId))) {
+                        break
+                    }
+                    if (settings.voteMode || isActivePlayer) {
+                        const answer = randomElement(publicState.playersSlectedAswers)!
+                        const action: CahVoteForAnswerAction = {
+                            type: 'CahVoteForAnswerAction',
+                            playerId: answer?.playerId
+                        }
+                        botGameContext.performGameAction(action, bot.userId)
+                    }
+                    break
+            }
+        }
     }
 
     pushFromDeck(deck: number[], discardPile: number[], pushTo: number[], count: number) {
