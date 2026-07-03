@@ -37,13 +37,5 @@
     "tsdown": "^0.22.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
-  },
-  "dependencies": {
-    "@types/lodash": "^4.17.24",
-    "lodash": "^4.18.1"
-  },
-  "inlinedDependencies": {
-    "eventemitter3": "5.0.4",
-    "typed-path": "2.2.3"
   }
 }

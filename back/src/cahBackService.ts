@@ -2,8 +2,9 @@ import { GameStatusEnum, getShuffledArray, handleMessage, randomElement, type Bo
 import { CahGamePhase, cahPlayerCardsCount, type CahDrawCardsAction, type CahGamePrivateState, type CahGamePublicState, type CahGameSettings, type CahPrivatePlayerState, type CahPublicPlayerState, type CahVoteForAnswerAction, type CahSendAnswersAction } from "./types"
 import answers from "./texts/answers"
 import questions from "./texts/questions"
-import _ from "lodash"
 import packageInfo from '../../package.json' with { type: 'json' };
+
+//const _ = await import('lodash')
 
 export const CahStaticSettings = {
     minPlayers: 2,
@@ -40,7 +41,7 @@ export class CahGameBackService implements GameBackService {
             phase: CahGamePhase.PLAYERS_CHOOSE_ANSWERS,
             questionCardId: privateState.questionDeck.shift()!,
             playersSlectedAswers: [],
-            activePlayerIndex: _.random(0, game.players.length - 1),
+            activePlayerIndex: 0, //_.random(0, game.players.length - 1),
             playersStates: game.players.map(player => {
                 return {
                     playerId: player.userId,
@@ -138,7 +139,7 @@ export class CahGameBackService implements GameBackService {
                 }
 
                 // remove cards from hand
-                _.pull(playerState.onHandAswersIds, ...action.answersIds)
+                //_.pull(playerState.onHandAswersIds, ...action.answersIds)
 
                 publicState.playersSlectedAswers.push({
                     playerId: playerId,

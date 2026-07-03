@@ -1,6 +1,6 @@
 {
   "name": "cards-against-humanity",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "license": "ISC",
   "author": "",
@@ -19,10 +19,11 @@
     "link-common": "npm run link-common -w back && npm run link-common -w front",
     "build-back": "npm run build -w back && npm run copy-back",
     "build-front": "npm run build -w front && npm run copy-front",
-    "build-all": "npm run build-back && npm run build-front",
+    "build-all": "npm run link-common && npm run build-back && npm run build-front",
     "copy-back": "node copy.js -back",
     "copy-front": "node copy.js -front",
-    "create-zip": "node create-zip.js"
+    "create-zip": "node create-zip.js",
+    "create-release": "npm run build-all && npm run create-zip"
   },
   "devDependencies": {
     "adm-zip": "^0.5.18",

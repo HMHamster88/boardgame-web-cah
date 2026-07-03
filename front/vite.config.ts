@@ -24,9 +24,6 @@ export default defineConfig({
         'cah-back': {
 
         },
-        lodash: {
-          generate: false
-        },
         '@oruga-ui/oruga-next': {
           generate: false
         }
