@@ -12,6 +12,22 @@
                 </div>
             </div>
 
+            <div class="white-card-container" v-if="gameState.phase == CahGamePhase.SHOW_ROUND_RESULTS">
+                <div v-for="qaCard in questionAnswersCards" :class="qaCardClassStyle(qaCard)">
+                    <div v-html="qaCard.text">
+                    </div>
+                    <h5>{{ t('playerCard') }}</h5>
+                    <div>{{ getPlayerName(qaCard.playerId) }}</div>
+                    <h5>{{ t('playerVotes') }}</h5>
+                    <div v-for="vote in qaCard.votes">
+                        {{ getPlayerName(vote) }}
+                    </div>
+                </div>
+            </div>
+            <o-button v-on:click="nextRound" v-if="nextRoundEnabled && localPlayer" style="margin-bottom: 0.5rem;">{{
+                t('nextRound')
+            }}</o-button>
+
             <div style="width: 100%;">
                 <div class="white-card-container">
                     <div v-for="answerCard in playerAnswersCards" :class="answerCardClassStyle(answerCard)"
@@ -22,8 +38,9 @@
             </div>
         </div>
         <div class="flex flex-col gap-2">
-            <o-button v-on:click="submit" :disabled="!submitEnabled">{{ t('submit') }}</o-button>
-            <o-button v-on:click="drawAllCards" :disabled="!drawAllCardsEnabled">{{ t('drawAllCards') }}</o-button>
+            <o-button v-if="localPlayer" v-on:click="submit" :disabled="!submitEnabled">{{ t('submit') }}</o-button>
+            <o-button v-if="localPlayer" v-on:click="drawAllCards" :disabled="!drawAllCardsEnabled">{{ t('drawAllCards')
+            }}</o-button>
         </div>
     </div>
 </template>
@@ -38,14 +55,15 @@ import { useI18n } from 'vue-i18n';
 import { type Game } from 'boardgame-web-common';
 import type { GameAction } from 'boardgame-web-common';
 
-import { answers, type CahDrawCardsAction, CahGamePhase, cahPlayerCardsCount, questions, WordCase, type CahGamePublicState, type CahPrivatePlayerState, type CahSendAnswersAction, type PlayerAnswers, type QuestionPlaceHolder, type CahGameSettings, type CahVoteForAnswerAction } from "cah-back";
+import { answers, type CahDrawCardsAction, CahGamePhase, cahPlayerCardsCount, questions, WordCase, type CahGamePublicState, type CahPrivatePlayerState, type CahSendAnswersAction, type PlayerAnswers, type QuestionPlaceHolder, type CahGameSettings, type CahVoteForAnswerAction, type EndRoundAction } from "cah-back";
 
 const oruga = useOruga();
 
 enum Status {
     SELECT_WHITE_CARD = "SELECT_WHITE_CARD",
     SELECT_RED_CARD = "SELECT_RED_CARD",
-    WAITING_FOR_OTHER_PLAYERS = "WAITING_FOR_OTHER_PLAYERS"
+    WAITING_FOR_OTHER_PLAYERS = "WAITING_FOR_OTHER_PLAYERS",
+    SHOW_ROUND_RESULTS = "SHOW_ROUND_RESULTS"
 }
 
 const { t } = useI18n({
@@ -56,16 +74,24 @@ const { t } = useI18n({
             status: {
                 [Status.SELECT_WHITE_CARD]: "Select white card",
                 [Status.SELECT_RED_CARD]: "Select red card",
-                [Status.WAITING_FOR_OTHER_PLAYERS]: "Waiting for other players"
-            }
+                [Status.WAITING_FOR_OTHER_PLAYERS]: "Waiting for other players",
+                [Status.SHOW_ROUND_RESULTS]: "Round Results"
+            },
+            playerCard: 'Player card:',
+            playerVotes: 'Voted:',
+            nextRound: 'Next Round'
         },
         ru: {
             drawAllCards: 'Сбросить все карыт за одно очко',
             status: {
                 [Status.SELECT_WHITE_CARD]: "Выберите белую карту",
                 [Status.SELECT_RED_CARD]: "Выберите красную карту",
-                [Status.WAITING_FOR_OTHER_PLAYERS]: "Ожидание других игроков"
-            }
+                [Status.WAITING_FOR_OTHER_PLAYERS]: "Ожидание других игроков",
+                [Status.SHOW_ROUND_RESULTS]: "Результаты раунда"
+            },
+            playerCard: 'Карта игрока:',
+            playerVotes: 'Проголосовали:',
+            nextRound: 'Следующий раунд'
         }
     }
 })
@@ -79,14 +105,19 @@ interface AnswerCard {
 
 interface QuestionAnswerCard {
     playerId: string,
-    text: string
+    text: string,
+    votes: string[]
 }
 
 const selectedQaCard = ref<QuestionAnswerCard | null>(null)
 
 const drawAllCardsEnabled = computed(() => {
-    return localPlayerPublicState.value.points && localPlayerPublicState.value.points > 0
+    return localPlayerPublicState.value && localPlayerPublicState.value.points && localPlayerPublicState.value.points > 0
 })
+
+function getPlayerName(playerId: string) {
+    return props.game.players.find(pl => pl.userId == playerId)?.name
+}
 
 const status = computed(() => {
     switch (props.gameState.phase) {
@@ -100,10 +131,15 @@ const status = computed(() => {
                 return Status.SELECT_RED_CARD
             }
             return Status.WAITING_FOR_OTHER_PLAYERS
+        case CahGamePhase.SHOW_ROUND_RESULTS:
+            return Status.SHOW_ROUND_RESULTS
     }
 })
 
 const alreadyVoted = computed(() => {
+    if (!localPlayer.value) {
+        return false
+    }
     return props.gameState.playersSlectedAswers.flatMap(ans => ans.playerVotes).includes(localPlayer.value.userId)
 })
 
@@ -181,15 +217,13 @@ function selectQACard(card: QuestionAnswerCard) {
 }
 
 const questionAnswersCards = computed(() => {
-    if (props.gameState.phase != CahGamePhase.VOTING_FOR_ANSWERS) {
-        return []
-    }
     const playersAnswers = props.gameState.playersSlectedAswers
 
     return playersAnswers.map((playerAnswer: PlayerAnswers) => {
         return {
             playerId: playerAnswer.playerId,
-            text: replacePlaceholders(questionText.value!, playerAnswer.answersIds.map(id => answers[id]!))
+            text: replacePlaceholders(questionText.value!, playerAnswer.answersIds.map(id => answers[id]!)),
+            votes: playerAnswer.playerVotes
         } as QuestionAnswerCard
     })
 })
@@ -202,7 +236,18 @@ function submitAnswers() {
     selectedAnswers.value = []
 }
 
+const nextRoundEnabled = computed(() => {
+    return props.gameState.phase == CahGamePhase.SHOW_ROUND_RESULTS
+})
 
+function nextRound() {
+    if (!nextRoundEnabled) {
+        return
+    }
+    performAction<EndRoundAction>({
+        type: 'EndRoundAction'
+    })
+}
 
 function countOccurrences(mainString: string, subString: string): number {
     const regex = new RegExp(subString, 'gi');
@@ -310,6 +355,9 @@ const localPlayer = computed(() => {
 })
 
 const submittedLocalPlayerAnswer = computed(() => {
+    if (!localPlayer.value) {
+        return false
+    }
     return props.gameState.playersSlectedAswers.find(answer => answer.playerId == localPlayer.value.userId)
 })
 
@@ -358,7 +406,7 @@ const props = defineProps({
     border-radius: 10px;
     margin-bottom: 1rem;
     box-shadow: var(--p-card-shadow);
-    height: 10rem;
+    min-height: 10rem;
     min-width: 20rem;
 }
 

@@ -1,5 +1,5 @@
-import { GameStatusEnum, getShuffledArray, handleMessage, randomElement, type BotGameContext, type Game, type GameAction, type GameBackService, type GameContext, type GameSettings, type GameState, type MesasgeHandlers } from "boardgame-web-common"
-import { CahGamePhase, cahPlayerCardsCount, type CahDrawCardsAction, type CahGamePrivateState, type CahGamePublicState, type CahGameSettings, type CahPrivatePlayerState, type CahPublicPlayerState, type CahVoteForAnswerAction, type CahSendAnswersAction } from "./types"
+import { GameStatusEnum, getShuffledArray, handleMessage, randomElement, removeElements, type BotGameContext, type Game, type GameAction, type GameBackService, type GameContext, type GameSettings, type GameState, type MesasgeHandlers } from "boardgame-web-common"
+import { CahGamePhase, cahPlayerCardsCount, type CahDrawCardsAction, type CahGamePrivateState, type CahGamePublicState, type CahGameSettings, type CahPrivatePlayerState, type CahPublicPlayerState, type CahVoteForAnswerAction, type CahSendAnswersAction, type EndRoundAction } from "./types"
 import answers from "./texts/answers"
 import questions from "./texts/questions"
 import packageInfo from '../../package.json' with { type: 'json' };
@@ -112,7 +112,8 @@ export class CahGameBackService implements GameBackService {
 
         type catanActionTypes = CahSendAnswersAction |
             CahVoteForAnswerAction |
-            CahDrawCardsAction
+            CahDrawCardsAction |
+            EndRoundAction
 
         const handlers: MesasgeHandlers<catanActionTypes> = {
             CahDrawCardsAction: () => {
@@ -139,7 +140,7 @@ export class CahGameBackService implements GameBackService {
                 }
 
                 // remove cards from hand
-                //_.pull(playerState.onHandAswersIds, ...action.answersIds)
+                removeElements(playerPrivateState.onHandAswersIds, action.answersIds)
 
                 publicState.playersSlectedAswers.push({
                     playerId: playerId,
@@ -222,12 +223,14 @@ export class CahGameBackService implements GameBackService {
                         privateState.questionDeck = getShuffledArray(privateState.questionDiscardPile)
                     }
 
-                    publicState.questionCardId = privateState.questionDeck.shift()!
-
-                    publicState.playersSlectedAswers = []
-                    publicState.phase = CahGamePhase.PLAYERS_CHOOSE_ANSWERS
-                    publicState.activePlayerIndex = (publicState.activePlayerIndex + 1) % game.players.length
+                    publicState.phase = CahGamePhase.SHOW_ROUND_RESULTS
                 }
+            },
+            EndRoundAction: () => {
+                publicState.questionCardId = privateState.questionDeck.shift()!
+                publicState.playersSlectedAswers = []
+                publicState.phase = CahGamePhase.PLAYERS_CHOOSE_ANSWERS
+                publicState.activePlayerIndex = (publicState.activePlayerIndex + 1) % game.players.length
             }
         }
 

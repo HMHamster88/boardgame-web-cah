@@ -14,7 +14,8 @@ export interface CahPublicPlayerState extends PlayerPublicState {
 
 export enum CahGamePhase {
     PLAYERS_CHOOSE_ANSWERS,
-    VOTING_FOR_ANSWERS
+    VOTING_FOR_ANSWERS,
+    SHOW_ROUND_RESULTS
 }
 
 export interface PlayerAnswers {
@@ -56,6 +57,10 @@ export interface CahVoteForAnswerAction extends GameAction {
 
 export interface CahDrawCardsAction extends GameAction {
     type: 'CahDrawCardsAction'
+}
+
+export interface EndRoundAction extends GameAction {
+    type: 'EndRoundAction'
 }
 
 export enum WordCase {
